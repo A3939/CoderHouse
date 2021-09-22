@@ -1,7 +1,7 @@
 const otpService = require('../services/otp-service')
 const hashService = require('../services/hash-service')
-
-
+const userService = require('../services/user-service')
+const tokenService = require('../services/token-service')
 class AuthController {
     async sendOtp(req, res) {
         //Logic
@@ -33,6 +33,43 @@ class AuthController {
 
 
         res.json({ hash: hash})
+
+    }
+    async verifyOtp(req,res){
+        const { otp, hash, phone} = req.body;
+        if(!otp || !hash || !phone){
+            res.status(400).json({message: 'All fields are required!'})
+
+        }
+
+        const [hashedOtp, expires] = hash.split('.');
+        if(Date.now() > +expires){
+            res.status(400).json({ message: 'OTP expired!'})
+        }
+
+        const data = `${phone}.${otp}.${expires}`;
+        const isValid = otpService.verifyOtp(hashedOtp, data)
+        if(!isValid){
+            res.status(400).json({message:'OTP is invalid'})
+        }
+
+        let user;
+        let accessToken;
+        let refreshToken;
+
+        try{
+            user = await userService.findUser({ phone })
+            if(!user){
+                user = await userService.createUser({ phone })
+            }
+        
+        }catch(err){
+            console.log(err)
+            res.status(500).json({message: 'DB Error'})
+        }
+
+        //Token
+        tokenService.generateTokens()
 
     }
 }
