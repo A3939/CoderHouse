@@ -19,57 +19,65 @@ class AuthController {
         const hash = hashService.hashOtp(data);
 
         //send otp
-        try{
+        try {
 
-            await otpService.sendBySms(phone,otp);
+            await otpService.sendBySms(phone, otp);
             res.json({
                 hash: `${hash}.${expires}`,
                 phone,
             })
-        }catch(err){
+        } catch (err) {
             console.log(err)
-            res.status(500).json({message: 'message sending failed'})
+            res.status(500).json({ message: 'message sending failed' })
         }
 
 
-        res.json({ hash: hash})
+        res.json({ hash: hash })
 
     }
-    async verifyOtp(req,res){
-        const { otp, hash, phone} = req.body;
-        if(!otp || !hash || !phone){
-            res.status(400).json({message: 'All fields are required!'})
+    async verifyOtp(req, res) {
+        const { otp, hash, phone } = req.body;
+        if (!otp || !hash || !phone) {
+            res.status(400).json({ message: 'All fields are required!' })
 
         }
 
         const [hashedOtp, expires] = hash.split('.');
-        if(Date.now() > +expires){
-            res.status(400).json({ message: 'OTP expired!'})
+        if (Date.now() > +expires) {
+            res.status(400).json({ message: 'OTP expired!' })
         }
 
         const data = `${phone}.${otp}.${expires}`;
         const isValid = otpService.verifyOtp(hashedOtp, data)
-        if(!isValid){
-            res.status(400).json({message:'OTP is invalid'})
+        if (!isValid) {
+            res.status(400).json({ message: 'OTP is invalid' })
         }
 
         let user;
-        let accessToken;
-        let refreshToken;
 
-        try{
+        try {
             user = await userService.findUser({ phone })
-            if(!user){
+            if (!user) {
                 user = await userService.createUser({ phone })
             }
-        
-        }catch(err){
+
+        } catch (err) {
             console.log(err)
-            res.status(500).json({message: 'DB Error'})
+            res.status(500).json({ message: 'DB Error' })
         }
 
         //Token
-        tokenService.generateTokens()
+        const { accessToken, refreshToken } = tokenService.generateTokens({
+            _id: user._id, 
+            acticated:false,
+        })
+
+        res.cookie('refreshToken', refreshToken, {
+            maxAge: 1000 * 60 * 60 * 24 * 30,
+            httpOnly: true,
+        })
+
+        res.json({ accessToken })
 
     }
 }
