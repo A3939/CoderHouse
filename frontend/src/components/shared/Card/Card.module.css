@@ -1,4 +1,4 @@
-.card{
+.card {
     width: 500px;
     max-width: 90%;
     min-height: 300px;
@@ -10,15 +10,13 @@
     justify-content: center;
     align-items: center;
 }
-
-
 .headingWrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 30px;
 }
-.heading{
+.heading {
     font-size: 22px;
     font-weight: bold;
     margin-left: 10px;
